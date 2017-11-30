@@ -1,0 +1,281 @@
+unit Unit1;
+
+interface
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,  Dialogs, shellapi, filectrl, xpman, StdCtrls, ComCtrls, Spin, sButton,  sEdit, sSpinEdit, sMemo, sLabel, sGroupBox, sListView, sSkinManager;
+
+type
+  TForm1 = class(TForm)
+    lv: TsListView;
+    GroupBox1: TsGroupBox;
+    Label1: TsLabel;
+    msub: TsMemo;
+    Label2: TsLabel;
+    semin: TsSpinEdit;
+    sesec: TsSpinEdit;
+    sems: TsSpinEdit;
+    ba: TsButton;
+    GroupBox2: TsGroupBox;
+    Button2: TsButton;
+    Button1: TsButton;
+    sSkinManager1: TsSkinManager;
+    procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure semsChange(Sender: TObject);
+    procedure sesecChange(Sender: TObject);
+    procedure lvClick(Sender: TObject);
+    procedure lvChange(Sender: TObject;
+ Item: TListItem;
+      Change: TItemChange);
+    procedure lvData(Sender: TObject;
+ Item: TListItem);
+    procedure msubChange(Sender: TObject);
+    procedure baClick(Sender: TObject);
+    procedure seminChange(Sender: TObject);
+    procedure GroupBox2Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+  private
+    { Deklarasi hanya untuk penggunaan dalam unit ini saja }
+    pathnow:string;
+changed:boolean;
+        procedure wmNCLButtonDown(var Msg: TWMNCLButtonDown);
+ message WM_NCLBUTTONDOWN;
+    procedure wmNCLButtonUp(var Msg: TWMNCLButtonUp);
+ message WM_NCLBUTTONUP;
+  public
+    { Deklarasi untuk penggunaan ke semua unit yang terintegerasi }
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+{$R *.dfm} //template tweaked by : Araachmadi Putra Pambudi
+procedure TForm1.wmNCLButtonDown(var Msg: TWMNCLButtonDown);
+begin
+  if Msg.HitTest = HTHELP then
+  begin
+    Msg.Result := 0;
+ // swallow mouse down on biHelp border icon
+  end
+  else
+    inherited;
+end;
+
+procedure TForm1.wmNCLButtonUp(var Msg: TWMNCLButtonUp);
+begin
+  if Msg.HitTest = HTHELP then
+  begin
+    Msg.Result := 0;
+    messagebox(handle,pchar('LRC2SRT 1.0'#13#13'Created by : Arachmadi Putra Pambudi'#13'TwinDDC Team Leader and DitPut Drive Corporation Company owner'+
+    #13#13'This program will help you to convert your Lyric file that has been made with MiniLyric or another Lyric creator in *.lrc format, into a '+
+    'common subtitle format, so you can play it''s video clip with a subtitle that has made from the lyric file.'#13'This program only using Single-Timing'+
+    'Lyric File, because this program is using simple text parsing to work, so it won''t work with Multiple-Timing Lyric File.'),'About LRC2SRT 1.0',64);
+    
+  end
+  else
+    inherited;
+end;
+Function pangkas(Teks,TitikAwal,TitikAkhir:String;
+AmbilTitikLingkup,HapusLingkup:boolean;
+PanjangLingkupLuar:integer):String;
+begin
+if AmbilTitikLingkup and not HapusLingkup then
+result:=copy(Teks,pos(TitikAwal,Teks),pos(TitikAkhir,Teks)+(length(TitikAkhir)-1)) else
+if AmbilTitikLingkup and HapusLingkup then
+result:=copy(copy(Teks,pos(TitikAwal,Teks),pos(TitikAkhir,Teks)+(length(TitikAkhir)-1)),1,PanjangLingkupLuar);
+if not AmbilTitikLingkup and not HapusLingkup then
+result:=copy(copy(Teks,pos(TitikAwal,Teks),(pos(TitikAkhir,Teks)-pos(TitikAwal,Teks))),length(TitikAwal)+1,length(Teks)-1) else
+if not AmbilTitikLingkup and HapusLingkup then begin
+result:=copy(Teks,length(copy(Teks,pos(TitikAwal,Teks),pos(TitikAkhir,Teks)+(length(TitikAkhir)-1)))+1,PanjangLingkupLuar);
+end;
+end;
+
+function getval(s:string):TStringlist;
+begin
+result:=tstringlist.Create;
+result.Add(pangkas(s,'[',':',false,false,0));
+result.Add(pangkas(s,':','.',false,false,0));
+result.Add(pangkas(s,'.',']',false,false,0));
+result.Add(copy(s,11,length(s)));
+end;
+
+function isnum(s:string):boolean;
+begin
+try
+strtoint(s);
+result:=true;
+except
+result:=false;
+end;
+end;
+
+procedure TForm1.Button1Click(Sender: TObject);
+var tod:topendialog;
+tsl:tstringlist;
+i,j,k:integer;
+tli:tlistitem;
+fn:string;
+begin
+tod:=topendialog.Create(nil);
+tod.Filter:='Minilyric File |*.lrc';
+tod.Title:='Opening single timing lyric file';
+if directoryexists('C:\Lyrics') then tod.FileName:='C:\Lyrics\*.lrc';
+if not tod.Execute then begin
+tod.Free;
+exit;
+end else begin
+pathnow:=tod.FileName;
+lv.Clear;
+tsl:=tstringlist.Create;
+tsl.LoadFromFile(tod.filename);
+fn:=tod.FileName;
+i:=tsl.Count;
+j:=0;
+k:=0;
+while j<i-1 do begin
+if not isnum(getval(tsl[j])[0]) then
+begin
+inc(j);
+inc(k);
+end
+else
+begin
+tli:=lv.Items.Add;
+tli.Caption:=inttostr((j+1)-k);
+tli.SubItems.Add(getval(tsl[j])[0]);
+tli.SubItems.Add(getval(tsl[j])[1]);
+tli.SubItems.Add(getval(tsl[j])[2]);
+tli.SubItems.Add(getval(tsl[j])[3]);
+inc(j);
+end;
+end;
+end;
+tod.free;
+tsl.Free;
+caption:='LRC2SRT - '+extractfilename(fn);
+if lv.Items.Count<=0 then   begin
+messagebox(handle,'Unable to parse the lyric data, make sure the file is UTF-8 encoded or is not blank.','Loading Failed',16);
+caption:='LRC2SRT - Please Load a Lyric File';
+end;
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+var tsl:tstringlist;
+i:integer;
+s:string;
+begin
+if lv.Items.Count<=0 then begin
+messagebox(handle,'Nothing to save,','Save As SRT',16);
+exit;
+end;
+tsl:=tstringlist.Create;
+for i:=1 to lv.Items.Count do begin
+if i=lv.Items.Count then
+s:='00'+':'+lv.Items.Item[i-1].SubItems.strings[0]+':'+lv.Items.Item[i-1].SubItems.strings[1]+','+lv.Items.Item[i-1].SubItems.strings[2]+
+' --> '+'00'+':'+lv.Items.Item[i-1].SubItems.strings[0]+':'+inttostr(strtoint(lv.Items.Item[i-1].SubItems.strings[1])+5)+','+lv.Items.Item[i-1].SubItems.strings[2]
+else
+s:='00'+':'+lv.Items.Item[i-1].SubItems.strings[0]+':'+lv.Items.Item[i-1].SubItems.strings[1]+','+lv.Items.Item[i-1].SubItems.strings[2]+
+' --> '+'00'+':'+lv.Items.Item[i].SubItems.strings[0]+':'+lv.Items.Item[i].SubItems.strings[1]+','+inttostr(strtoint(lv.Items.Item[i].SubItems.strings[2])-3);
+tsl.Add(inttostr(i));
+tsl.Add(s);
+tsl.Add(lv.Items.Item[i-1].subitems.strings[3]);
+tsl.Add('');
+lv.Items.Item[i-1].Checked:=true;
+end;
+tsl.SaveToFile(changefileext(pathnow,'.srt'));
+tsl.Free;
+messagebox(handle,pchar('Conversion completed, the converted file has saved to the same folder with the lyric file.'),'Conversion Completed',64);
+end;
+
+procedure TForm1.semsChange(Sender: TObject);
+begin
+if sems.Value>99 then begin
+sesec.Value:=sesec.Value+1;
+sems.text:='0';
+end;
+end;
+
+procedure TForm1.sesecChange(Sender: TObject);
+begin
+if sesec.Value>59 then begin
+semin.Value:=semin.Value+1;
+sesec.text:='0';
+end;
+end;
+
+procedure TForm1.lvClick(Sender: TObject);
+begin
+try
+semin.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[0];
+sesec.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[1];
+sems.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[2];
+msub.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[3];
+ba.Enabled:=false;
+except end;
+end;
+
+procedure TForm1.lvChange(Sender: TObject;
+ Item: TListItem;
+  Change: TItemChange);
+begin
+try
+
+
+semin.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[0];
+sesec.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[1];
+sems.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[2];
+msub.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[3];
+ba.Enabled:=false;
+except end;
+end;
+
+procedure TForm1.lvData(Sender: TObject;
+ Item: TListItem);
+begin
+try
+semin.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[0];
+sesec.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[1];
+sems.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[2];
+msub.Text:=lv.Items.Item[lv.itemindex].SubItems.Strings[3];
+except end;
+end;
+
+procedure TForm1.msubChange(Sender: TObject);
+begin
+changed:=true;
+end;
+
+procedure TForm1.baClick(Sender: TObject);
+var m,s,ms:string;
+begin
+if messagebox(handle,'Do you want to apply changes to the current line?','Apply Changes',48+4)=mrno then exit else
+if semin.Value<10 then m:='0'+semin.Text else m:=semin.Text;
+if sesec.Value<10 then s:='0'+sesec.Text else s:=sesec.Text;
+if sems.Value<10 then ms:='0'+sems.Text else ms:=sems.Text;
+
+lv.Items.BeginUpdate;
+lv.Items.Item[lv.ItemIndex].SubItems.Strings[0]:=m;
+lv.Items.Item[lv.ItemIndex].SubItems.Strings[1]:=s;
+lv.Items.Item[lv.ItemIndex].SubItems.Strings[2]:=ms;
+lv.Items.Item[lv.ItemIndex].SubItems.Strings[3]:=msub.Text;
+lv.Items.EndUpdate;
+lv.SetFocus;
+end;
+
+procedure TForm1.seminChange(Sender: TObject);
+begin
+ba.Enabled:=true;
+end;
+
+procedure TForm1.GroupBox2Click(Sender: TObject);
+begin
+Application.Title:='LRC2SRT 1.0';
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+application.Title:='LRC2SRT';
+end;
+
+end.
